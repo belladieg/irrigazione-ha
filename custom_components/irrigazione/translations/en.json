@@ -1,0 +1,45 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure irrigation system",
+        "description": "Enter a name for this irrigation system.",
+        "data": {
+          "title": "System name"
+        }
+      },
+      "zone": {
+        "title": "Map zones to ESPHome relays",
+        "description": "Select the Sonoff RM4 switches for each irrigation zone.",
+        "data": {
+          "zona_1_switch": "Zone 1 switch",
+          "zona_2_switch": "Zone 2 switch",
+          "zona_3_switch": "Zone 3 switch",
+          "zona_4_switch": "Zone 4 switch"
+        }
+      }
+    },
+    "error": {
+      "entity_not_found": "Entity not found. Make sure the ESPHome device is online and integrated in HA."
+    },
+    "abort": {
+      "already_configured": "Irrigation system already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Update zone mapping",
+        "data": {
+          "zona_1_switch": "Zone 1 switch",
+          "zona_2_switch": "Zone 2 switch",
+          "zona_3_switch": "Zone 3 switch",
+          "zona_4_switch": "Zone 4 switch"
+        }
+      }
+    },
+    "error": {
+      "entity_not_found": "Entity not found."
+    }
+  }
+}

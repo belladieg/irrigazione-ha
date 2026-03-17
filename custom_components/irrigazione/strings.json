@@ -1,0 +1,69 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configura il sistema irrigazione",
+        "description": "Inserisci un nome per questo sistema di irrigazione.",
+        "data": {
+          "title": "Nome del sistema"
+        }
+      },
+      "zone": {
+        "title": "Associa le zone ai relè",
+        "description": "Seleziona gli switch ESPHome (Sonoff RM4) per ciascuna zona.",
+        "data": {
+          "zona_1_switch": "Switch Zona 1",
+          "zona_2_switch": "Switch Zona 2",
+          "zona_3_switch": "Switch Zona 3",
+          "zona_4_switch": "Switch Zona 4"
+        }
+      }
+    },
+    "error": {
+      "entity_not_found": "Entità non trovata. Verifica che il dispositivo ESPHome sia connesso."
+    },
+    "abort": {
+      "already_configured": "Sistema già configurato."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Modifica zone irrigazione",
+        "data": {
+          "zona_1_switch": "Switch Zona 1",
+          "zona_2_switch": "Switch Zona 2",
+          "zona_3_switch": "Switch Zona 3",
+          "zona_4_switch": "Switch Zona 4"
+        }
+      }
+    },
+    "error": {
+      "entity_not_found": "Entità non trovata."
+    }
+  },
+  "services": {
+    "avvia_sequenza": {
+      "name": "Avvia sequenza",
+      "description": "Avvia tutte le zone in sequenza."
+    },
+    "ferma_tutto": {
+      "name": "Ferma tutto",
+      "description": "Ferma l'irrigazione e spegne tutti i relè."
+    },
+    "avvia_zona": {
+      "name": "Avvia zona",
+      "description": "Attiva una singola zona per N minuti.",
+      "fields": {
+        "zona": {
+          "name": "Zona",
+          "description": "Numero zona (1-4)"
+        },
+        "durata": {
+          "name": "Durata",
+          "description": "Durata in minuti"
+        }
+      }
+    }
+  }
+}

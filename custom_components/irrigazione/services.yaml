@@ -1,0 +1,37 @@
+avvia_sequenza:
+  name: Avvia sequenza irrigazione
+  description: >
+    Avvia la sequenza completa di irrigazione (tutte le zone in ordine).
+    Ignora le condizioni meteo se avviato manualmente.
+  fields: {}
+
+ferma_tutto:
+  name: Ferma irrigazione
+  description: Ferma immediatamente la sequenza e spegne tutti i relè.
+  fields: {}
+
+avvia_zona:
+  name: Avvia singola zona
+  description: Accende una sola zona per una durata definita (utile per test).
+  fields:
+    zona:
+      name: Numero zona
+      description: "Zona da attivare (1-4)"
+      required: true
+      example: 1
+      selector:
+        number:
+          min: 1
+          max: 4
+          mode: box
+    durata:
+      name: Durata (minuti)
+      description: Durata in minuti. Se omesso usa il default (10 min).
+      required: false
+      example: 5
+      selector:
+        number:
+          min: 1
+          max: 120
+          unit_of_measurement: min
+          mode: box

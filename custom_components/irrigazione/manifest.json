@@ -1,0 +1,13 @@
+{
+  "domain": "irrigazione",
+  "name": "Sistema Irrigazione",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "1.0.0",
+  "homeassistant": "2023.1.0"
+}

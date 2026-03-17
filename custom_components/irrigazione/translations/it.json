@@ -1,0 +1,46 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configura il sistema irrigazione",
+        "description": "Inserisci un nome per identificare questo sistema.",
+        "data": {
+          "title": "Nome del sistema"
+        }
+      },
+      "zone": {
+        "title": "Associa le 4 zone ai relè ESPHome",
+        "description": "Seleziona gli switch del Sonoff RM4 per ciascuna zona di irrigazione.",
+        "data": {
+          "zona_1_switch": "Switch Zona 1",
+          "zona_2_switch": "Switch Zona 2",
+          "zona_3_switch": "Switch Zona 3",
+          "zona_4_switch": "Switch Zona 4"
+        }
+      }
+    },
+    "error": {
+      "entity_not_found": "Entità non trovata. Verifica che il Sonoff RM4 sia online e integrato in HA."
+    },
+    "abort": {
+      "already_configured": "Sistema irrigazione già configurato."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Modifica associazione zone",
+        "description": "Aggiorna gli switch ESPHome associati alle zone.",
+        "data": {
+          "zona_1_switch": "Switch Zona 1",
+          "zona_2_switch": "Switch Zona 2",
+          "zona_3_switch": "Switch Zona 3",
+          "zona_4_switch": "Switch Zona 4"
+        }
+      }
+    },
+    "error": {
+      "entity_not_found": "Entità non trovata."
+    }
+  }
+}

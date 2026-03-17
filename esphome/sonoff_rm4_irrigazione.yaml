@@ -1,0 +1,110 @@
+# =============================================================
+# SONOFF RM4 - IRRIGAZIONE - ESPHome Configuration
+# =============================================================
+# IMPORTANTE: Verifica i GPIO pin con il tuo specifico modello.
+# I pin qui sotto sono per il Sonoff 4CH Pro R3 (ESP8285).
+# Se hai un modello diverso, controlla la pinout sul sito
+# ESPHome: https://devices.esphome.io
+# =============================================================
+
+substitutions:
+  device_name: sonoff-rm4-irrigazione
+  friendly_name: "Sonoff RM4 Irrigazione"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  comment: "4 zone irrigazione"
+
+# --- Adatta il board al tuo chip ---
+# Sonoff 4CH Pro R3: esp8285
+# Se è ESP32: cambia in esp32 con board: esp32dev
+esp8266:
+  board: esp8285
+
+logger:
+  level: INFO
+
+api:
+  encryption:
+    key: !secret esphome_api_key  # aggiungi in secrets.yaml
+
+ota:
+  - platform: esphome
+    password: !secret esphome_ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  ap:
+    ssid: "${friendly_name} AP"
+    password: !secret wifi_ap_password
+
+captive_portal:
+
+# Sincronizza orario (utile per i log)
+time:
+  - platform: sntp
+    id: sntp_time
+
+# =============================================================
+# RELÈ - 4 ZONE IRRIGAZIONE
+# NOTA: Cambia i pin GPIO in base al tuo modello
+# =============================================================
+switch:
+  - platform: gpio
+    name: "Zona 1"
+    id: relay_zona_1
+    pin:
+      number: GPIO12     # Sonoff 4CH Pro R3 - Relay 1
+    restore_mode: ALWAYS_OFF
+    icon: "mdi:sprinkler"
+
+  - platform: gpio
+    name: "Zona 2"
+    id: relay_zona_2
+    pin:
+      number: GPIO5      # Sonoff 4CH Pro R3 - Relay 2
+    restore_mode: ALWAYS_OFF
+    icon: "mdi:sprinkler"
+
+  - platform: gpio
+    name: "Zona 3"
+    id: relay_zona_3
+    pin:
+      number: GPIO4      # Sonoff 4CH Pro R3 - Relay 3
+    restore_mode: ALWAYS_OFF
+    icon: "mdi:sprinkler"
+
+  - platform: gpio
+    name: "Zona 4"
+    id: relay_zona_4
+    pin:
+      number: GPIO15     # Sonoff 4CH Pro R3 - Relay 4
+    restore_mode: ALWAYS_OFF
+    icon: "mdi:sprinkler"
+
+# =============================================================
+# SENSORI DIAGNOSTICI
+# =============================================================
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 60s
+    entity_category: diagnostic
+
+  - platform: uptime
+    name: "Uptime"
+    entity_category: diagnostic
+
+binary_sensor:
+  - platform: status
+    name: "Status"
+    entity_category: diagnostic
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      entity_category: diagnostic
