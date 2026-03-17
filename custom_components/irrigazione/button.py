@@ -41,7 +41,8 @@ class _IrrigazioneButton(ButtonEntity):
 
 
 class IrrigazioneAvviaButton(_IrrigazioneButton):
-    _attr_name = "Avvia irrigazione"
+    # Prefisso "Controllo" → si ordina accanto a "Controllo - Sistema attivo"
+    _attr_name = "Controllo - Avvia sequenza"
     _attr_icon = "mdi:play-circle-outline"
 
     def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
@@ -55,7 +56,7 @@ class IrrigazioneAvviaButton(_IrrigazioneButton):
 
 
 class IrrigazioneFermaButton(_IrrigazioneButton):
-    _attr_name = "Ferma irrigazione"
+    _attr_name = "Controllo - Ferma tutto"
     _attr_icon = "mdi:stop-circle-outline"
 
     def __init__(self, hass: HomeAssistant, entry_id: str) -> None:

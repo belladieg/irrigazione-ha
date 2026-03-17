@@ -4,13 +4,11 @@
       "user": {
         "title": "Configure irrigation system",
         "description": "Enter a name for this irrigation system.",
-        "data": {
-          "title": "System name"
-        }
+        "data": { "title": "System name" }
       },
       "zone": {
-        "title": "Map zones to ESPHome relays",
-        "description": "Select the Sonoff RM4 switches for each irrigation zone.",
+        "title": "Map zones to relays",
+        "description": "Select the switches controlling the 4 relays. Compatible with any relay module integrated in Home Assistant (ESPHome, Tasmota, Zigbee, Z-Wave, etc.).",
         "data": {
           "zona_1_switch": "Zone 1 switch",
           "zona_2_switch": "Zone 2 switch",
@@ -20,11 +18,9 @@
       }
     },
     "error": {
-      "entity_not_found": "Entity not found. Make sure the ESPHome device is online and integrated in HA."
+      "entity_not_found": "Entity not found. Make sure the device is online and visible in Home Assistant."
     },
-    "abort": {
-      "already_configured": "Irrigation system already configured."
-    }
+    "abort": { "already_configured": "Irrigation system already configured." }
   },
   "options": {
     "step": {
@@ -38,8 +34,6 @@
         }
       }
     },
-    "error": {
-      "entity_not_found": "Entity not found."
-    }
+    "error": { "entity_not_found": "Entity not found." }
   }
 }

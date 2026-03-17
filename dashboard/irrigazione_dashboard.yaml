@@ -1,105 +1,103 @@
 # =============================================================
-# IRRIGAZIONE - Dashboard Lovelace
+# IRRIGAZIONE — Dashboard Lovelace
 # =============================================================
-# Come installare:
-#   1. HA → Impostazioni → Dashboard → Aggiungi dashboard
-#   2. Scegli "Editor RAW" e incolla questo file
-# OPPURE aggiungila a una dashboard esistente:
-#   Modifica dashboard → Editor RAW → aggiungi sotto "views:"
+# Come importare:
+#   1. Copia il contenuto di questo file
+#   2. HA → Impostazioni → Dashboard → + → "Vuota"
+#   3. Apri la dashboard → matita → Editor RAW → incolla
 #
-# NOTA: sostituisci il prefisso delle entità se diverso.
-# Il prefisso dipende dal nome che hai dato al sistema.
-# Esempio: se hai chiamato il sistema "Irrigazione Giardino"
-# le entità avranno prefisso diverso. Controlla in
-# Impostazioni → Dispositivi → Sistema Irrigazione
+# I nomi entità seguono il prefisso del tuo sistema.
+# Se hai chiamato il sistema "Irrigazione Giardino" i prefissi
+# potrebbero essere diversi. Controlla in:
+# Impostazioni → Dispositivi → Sistema Irrigazione → copia entity_id
 # =============================================================
 
 title: Irrigazione
 views:
 
   # ════════════════════════════════════════════════════════
-  # VISTA 1 — PANNELLO PRINCIPALE
+  # VISTA 1 — CONTROLLO
   # ════════════════════════════════════════════════════════
   - title: Controllo
     path: irrigazione
     icon: mdi:sprinkler-variant
     cards:
 
-      # ── Stato generale ──────────────────────────────────
+      # ── Stato e master switch ────────────────────────────
       - type: entities
-        title: "Stato sistema"
+        title: "Sistema"
         show_header_toggle: false
         entities:
-          - entity: switch.sistema_attivo
+          - entity: switch.controllo_sistema_attivo
             name: "Sistema attivo"
-          - entity: sensor.stato_irrigazione
+          - entity: sensor.controllo_stato
             name: "Stato attuale"
-          - entity: sensor.fattore_riduzione_irrigazione
+          - entity: sensor.meteo_fattore_riduzione
             name: "Irrigazione attiva (%)"
 
-      # ── Controllo manuale ───────────────────────────────
+      # ── Pulsanti avvio / stop ───────────────────────────
       - type: horizontal-stack
         cards:
           - type: button
             name: "Avvia ora"
             icon: mdi:play-circle-outline
-            icon_height: 48px
+            icon_height: 52px
             tap_action:
               action: call-service
               service: irrigazione.avvia_sequenza
           - type: button
             name: "Ferma tutto"
             icon: mdi:stop-circle-outline
-            icon_height: 48px
+            icon_height: 52px
             icon_color: red
             tap_action:
               action: call-service
               service: irrigazione.ferma_tutto
 
-      # ── Zone in corso (4 card orizzontali) ──────────────
+      # ── Zone ────────────────────────────────────────────
       - type: entities
-        title: "Zone irrigazione"
+        title: "Zone"
         show_header_toggle: false
         entities:
           - type: section
             label: "Zona 1"
-          - entity: text.nome_zona_1
+          - entity: text.zona_1_nome
             name: "Nome"
           - entity: number.zona_1_durata_base
             name: "Durata base"
-          - entity: sensor.durata_effettiva_zona_1
+          - entity: sensor.zona_1_durata_effettiva
             name: "Durata effettiva"
 
           - type: section
             label: "Zona 2"
-          - entity: text.nome_zona_2
+          - entity: text.zona_2_nome
             name: "Nome"
           - entity: number.zona_2_durata_base
             name: "Durata base"
-          - entity: sensor.durata_effettiva_zona_2
+          - entity: sensor.zona_2_durata_effettiva
             name: "Durata effettiva"
 
           - type: section
             label: "Zona 3"
-          - entity: text.nome_zona_3
+          - entity: text.zona_3_nome
             name: "Nome"
           - entity: number.zona_3_durata_base
             name: "Durata base"
-          - entity: sensor.durata_effettiva_zona_3
+          - entity: sensor.zona_3_durata_effettiva
             name: "Durata effettiva"
 
           - type: section
             label: "Zona 4"
-          - entity: text.nome_zona_4
+          - entity: text.zona_4_nome
             name: "Nome"
           - entity: number.zona_4_durata_base
             name: "Durata base"
-          - entity: sensor.durata_effettiva_zona_4
+          - entity: sensor.zona_4_durata_effettiva
             name: "Durata effettiva"
 
           - type: section
             label: "Generale"
-          - entity: number.attesa_tra_zone
+          - entity: number.zone_attesa_tra_zone
             name: "Attesa tra zone"
 
   # ════════════════════════════════════════════════════════
@@ -115,19 +113,19 @@ views:
         title: "Giorni attivi"
         show_header_toggle: false
         entities:
-          - entity: switch.lunedi
+          - entity: switch.giorni_lunedi
             name: "Lunedì"
-          - entity: switch.martedi
+          - entity: switch.giorni_martedi
             name: "Martedì"
-          - entity: switch.mercoledi
+          - entity: switch.giorni_mercoledi
             name: "Mercoledì"
-          - entity: switch.giovedi
+          - entity: switch.giorni_giovedi
             name: "Giovedì"
-          - entity: switch.venerdi
+          - entity: switch.giorni_venerdi
             name: "Venerdì"
-          - entity: switch.sabato
+          - entity: switch.giorni_sabato
             name: "Sabato"
-          - entity: switch.domenica
+          - entity: switch.giorni_domenica
             name: "Domenica"
 
       # ── Fasce orarie ─────────────────────────────────────
@@ -139,25 +137,25 @@ views:
             label: "Fascia 1"
           - entity: switch.fascia_1_attiva
             name: "Abilitata"
-          - entity: time.orario_fascia_1
+          - entity: time.fascia_1_orario
             name: "Orario"
 
           - type: section
             label: "Fascia 2"
           - entity: switch.fascia_2_attiva
             name: "Abilitata"
-          - entity: time.orario_fascia_2
+          - entity: time.fascia_2_orario
             name: "Orario"
 
           - type: section
             label: "Fascia 3"
           - entity: switch.fascia_3_attiva
             name: "Abilitata"
-          - entity: time.orario_fascia_3
+          - entity: time.fascia_3_orario
             name: "Orario"
 
   # ════════════════════════════════════════════════════════
-  # VISTA 3 — METEO E ADATTAMENTO
+  # VISTA 3 — METEO
   # ════════════════════════════════════════════════════════
   - title: Meteo
     path: irrigazione-meteo
@@ -166,7 +164,7 @@ views:
 
       # ── Gauge fattore riduzione ──────────────────────────
       - type: gauge
-        entity: sensor.fattore_riduzione_irrigazione
+        entity: sensor.meteo_fattore_riduzione
         name: "Irrigazione attiva"
         min: 0
         max: 100
@@ -181,48 +179,48 @@ views:
         title: "Piogge recenti (Open-Meteo)"
         show_header_toggle: false
         entities:
-          - entity: sensor.pioggia_oggi
+          - entity: sensor.meteo_pioggia_oggi
             name: "Oggi"
-          - entity: sensor.pioggia_ieri
+          - entity: sensor.meteo_pioggia_ieri
             name: "Ieri"
-          - entity: sensor.2_giorni_fa
+          - entity: sensor.meteo_pioggia_2_giorni_fa
             name: "2 giorni fa"
-          - entity: sensor.3_giorni_fa
+          - entity: sensor.meteo_pioggia_3_giorni_fa
             name: "3 giorni fa"
-          - entity: sensor.4_giorni_fa
+          - entity: sensor.meteo_pioggia_4_giorni_fa
             name: "4 giorni fa"
-          - entity: sensor.5_giorni_fa
+          - entity: sensor.meteo_pioggia_5_giorni_fa
             name: "5 giorni fa"
-          - entity: sensor.6_giorni_fa
+          - entity: sensor.meteo_pioggia_6_giorni_fa
             name: "6 giorni fa"
           - type: section
             label: "Totale e previsioni"
-          - entity: sensor.pioggia_storica_totale
+          - entity: sensor.meteo_pioggia_storica_totale
             name: "Totale periodo analizzato"
-          - entity: sensor.pioggia_prevista_domani
+          - entity: sensor.meteo_pioggia_prevista_domani
             name: "Prevista domani"
-          - entity: sensor.probabilita_pioggia_domani
+          - entity: sensor.meteo_probabilita_pioggia_domani
             name: "Probabilità pioggia domani"
 
-      # ── Impostazioni soglie meteo ────────────────────────
+      # ── Soglie e regole meteo ────────────────────────────
       - type: entities
         title: "Regole adattamento meteo"
         show_header_toggle: false
         entities:
           - type: section
             label: "Analisi pioggia passata"
-          - entity: number.giorni_da_analizzare
+          - entity: number.meteo_giorni_da_analizzare
             name: "Giorni da analizzare"
-          - entity: number.soglia_pioggia_storica
+          - entity: number.meteo_soglia_pioggia_storica
             name: "Soglia skip/riduzione (mm)"
-          - entity: switch.salta_se_ha_piovuto_di_recente
+          - entity: switch.meteo_salta_se_pioggia_recente
             name: "Salta se supera soglia"
-          - entity: switch.riduci_durata_se_ha_piovuto
+          - entity: switch.meteo_riduci_se_ha_piovuto
             name: "Riduci proporzionalmente"
 
           - type: section
             label: "Previsione pioggia domani"
-          - entity: number.soglia_pioggia_prevista
+          - entity: number.meteo_soglia_pioggia_prevista
             name: "Soglia skip previsione (mm)"
-          - entity: switch.salta_se_prevista_pioggia
+          - entity: switch.meteo_salta_se_pioggia_prevista
             name: "Salta se supera soglia"

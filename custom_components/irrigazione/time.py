@@ -11,20 +11,16 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import (
-    DOMAIN,
-    ENTITIES,
-    DEFAULT_SLOT_1,
-    DEFAULT_SLOT_2,
-    DEFAULT_SLOT_3,
-    KEY_ORA_SLOT_1,
-    KEY_ORA_SLOT_2,
-    KEY_ORA_SLOT_3,
+    DOMAIN, ENTITIES,
+    DEFAULT_SLOT_1, DEFAULT_SLOT_2, DEFAULT_SLOT_3,
+    KEY_ORA_SLOT_1, KEY_ORA_SLOT_2, KEY_ORA_SLOT_3,
 )
 
+# Prefisso "Fascia N" → si ordina con i switch "Fascia N - Attiva"
 TIMES = (
-    (KEY_ORA_SLOT_1, "Orario fascia 1", DEFAULT_SLOT_1),
-    (KEY_ORA_SLOT_2, "Orario fascia 2", DEFAULT_SLOT_2),
-    (KEY_ORA_SLOT_3, "Orario fascia 3", DEFAULT_SLOT_3),
+    (KEY_ORA_SLOT_1, "Fascia 1 - Orario", DEFAULT_SLOT_1),
+    (KEY_ORA_SLOT_2, "Fascia 2 - Orario", DEFAULT_SLOT_2),
+    (KEY_ORA_SLOT_3, "Fascia 3 - Orario", DEFAULT_SLOT_3),
 )
 
 
@@ -35,15 +31,12 @@ async def async_setup_entry(
 ) -> None:
     entities = [IrrigazioneTime(entry.entry_id, key, name, default) for key, name, default in TIMES]
     async_add_entities(entities)
-
     store = hass.data[DOMAIN][entry.entry_id].setdefault(ENTITIES, {})
     for entity in entities:
         store[entity.key] = entity
 
 
 class IrrigazioneTime(RestoreEntity, TimeEntity):
-    """Orario fascia irrigazione con persistenza."""
-
     _attr_has_entity_name = True
     _attr_should_poll = False
     _attr_icon = "mdi:clock-time-four-outline"
@@ -65,9 +58,7 @@ class IrrigazioneTime(RestoreEntity, TimeEntity):
         if last_state := await self.async_get_last_state():
             try:
                 parts = last_state.state.split(":")
-                self._attr_native_value = datetime.time(
-                    int(parts[0]), int(parts[1]), 0
-                )
+                self._attr_native_value = datetime.time(int(parts[0]), int(parts[1]), 0)
             except (ValueError, IndexError):
                 pass
 

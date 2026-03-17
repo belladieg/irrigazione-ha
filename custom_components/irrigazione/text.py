@@ -10,19 +10,16 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import (
-    DOMAIN,
-    ENTITIES,
-    KEY_NOME_ZONA_1,
-    KEY_NOME_ZONA_2,
-    KEY_NOME_ZONA_3,
-    KEY_NOME_ZONA_4,
+    DOMAIN, ENTITIES,
+    KEY_NOME_ZONA_1, KEY_NOME_ZONA_2, KEY_NOME_ZONA_3, KEY_NOME_ZONA_4,
 )
 
+# Prefisso "Zona N" → si ordina con "Zona N - Durata base" e "Zona N - Durata effettiva"
 ZONE_NAMES = (
-    (KEY_NOME_ZONA_1, "Nome Zona 1", "Zona 1"),
-    (KEY_NOME_ZONA_2, "Nome Zona 2", "Zona 2"),
-    (KEY_NOME_ZONA_3, "Nome Zona 3", "Zona 3"),
-    (KEY_NOME_ZONA_4, "Nome Zona 4", "Zona 4"),
+    (KEY_NOME_ZONA_1, "Zona 1 - Nome", "Zona 1"),
+    (KEY_NOME_ZONA_2, "Zona 2 - Nome", "Zona 2"),
+    (KEY_NOME_ZONA_3, "Zona 3 - Nome", "Zona 3"),
+    (KEY_NOME_ZONA_4, "Zona 4 - Nome", "Zona 4"),
 )
 
 
@@ -33,15 +30,12 @@ async def async_setup_entry(
 ) -> None:
     entities = [IrrigazioneText(entry.entry_id, key, name, default) for key, name, default in ZONE_NAMES]
     async_add_entities(entities)
-
     store = hass.data[DOMAIN][entry.entry_id].setdefault(ENTITIES, {})
     for entity in entities:
         store[entity.key] = entity
 
 
 class IrrigazioneText(RestoreEntity, TextEntity):
-    """Nome zona irrigazione con persistenza."""
-
     _attr_has_entity_name = True
     _attr_should_poll = False
     _attr_icon = "mdi:sprinkler"

@@ -3,14 +3,12 @@
     "step": {
       "user": {
         "title": "Configura il sistema irrigazione",
-        "description": "Inserisci un nome per questo sistema di irrigazione.",
-        "data": {
-          "title": "Nome del sistema"
-        }
+        "description": "Inserisci un nome per identificare questo sistema.",
+        "data": { "title": "Nome del sistema" }
       },
       "zone": {
-        "title": "Associa le zone ai relè",
-        "description": "Seleziona gli switch ESPHome (Sonoff RM4) per ciascuna zona.",
+        "title": "Associa le 4 zone ai relè",
+        "description": "Seleziona gli switch che controllano i 4 relè del tuo dispositivo (qualsiasi marca/modello).",
         "data": {
           "zona_1_switch": "Switch Zona 1",
           "zona_2_switch": "Switch Zona 2",
@@ -20,16 +18,14 @@
       }
     },
     "error": {
-      "entity_not_found": "Entità non trovata. Verifica che il dispositivo ESPHome sia connesso."
+      "entity_not_found": "Entità non trovata. Verifica che il dispositivo sia online e visibile in HA."
     },
-    "abort": {
-      "already_configured": "Sistema già configurato."
-    }
+    "abort": { "already_configured": "Sistema già configurato." }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Modifica zone irrigazione",
+        "title": "Modifica associazione zone",
         "data": {
           "zona_1_switch": "Switch Zona 1",
           "zona_2_switch": "Switch Zona 2",
@@ -38,32 +34,6 @@
         }
       }
     },
-    "error": {
-      "entity_not_found": "Entità non trovata."
-    }
-  },
-  "services": {
-    "avvia_sequenza": {
-      "name": "Avvia sequenza",
-      "description": "Avvia tutte le zone in sequenza."
-    },
-    "ferma_tutto": {
-      "name": "Ferma tutto",
-      "description": "Ferma l'irrigazione e spegne tutti i relè."
-    },
-    "avvia_zona": {
-      "name": "Avvia zona",
-      "description": "Attiva una singola zona per N minuti.",
-      "fields": {
-        "zona": {
-          "name": "Zona",
-          "description": "Numero zona (1-4)"
-        },
-        "durata": {
-          "name": "Durata",
-          "description": "Durata in minuti"
-        }
-      }
-    }
+    "error": { "entity_not_found": "Entità non trovata." }
   }
 }

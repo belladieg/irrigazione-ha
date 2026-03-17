@@ -12,42 +12,32 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
-    DOMAIN,
-    COORDINATOR,
-    ENTITIES,
-    IDX_TODAY,
-    IDX_TOMORROW,
+    DOMAIN, COORDINATOR, ENTITIES,
+    IDX_TODAY, IDX_TOMORROW,
     KEY_ZONA_1_DURATA, KEY_ZONA_2_DURATA, KEY_ZONA_3_DURATA, KEY_ZONA_4_DURATA,
-    KEY_GIORNI,
-    KEY_SOGLIA_PREVISTA,
-    KEY_SOGLIA_STORICA,
-    KEY_SKIP_PREVISTA,
-    KEY_SKIP_RECENTE,
-    KEY_RIDUCI,
+    KEY_GIORNI, KEY_SOGLIA_PREVISTA, KEY_SOGLIA_STORICA,
+    KEY_SKIP_PREVISTA, KEY_SKIP_RECENTE, KEY_RIDUCI,
     KEY_NOME_ZONA_1, KEY_NOME_ZONA_2, KEY_NOME_ZONA_3, KEY_NOME_ZONA_4,
     CONF_ZONA_1, CONF_ZONA_2, CONF_ZONA_3, CONF_ZONA_4,
-    DEFAULT_DURATA,
-    DEFAULT_GIORNI,
-    DEFAULT_SOGLIA_PREVISTA,
-    DEFAULT_SOGLIA_STORICA,
+    DEFAULT_DURATA, DEFAULT_GIORNI, DEFAULT_SOGLIA_PREVISTA, DEFAULT_SOGLIA_STORICA,
 )
 from .coordinator import IrrigazioneCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-# Giorni da mostrare nel pannello storico (label, offset da oggi)
+# (label con prefisso "Meteo", offset da oggi)
+# Ordine alfabetico: 2 giorni fa < 3 giorni fa < ... < Ieri < Oggi
 GIORNI_STORICI = [
-    ("Pioggia oggi",     0),
-    ("Pioggia ieri",     1),
-    ("2 giorni fa",      2),
-    ("3 giorni fa",      3),
-    ("4 giorni fa",      4),
-    ("5 giorni fa",      5),
-    ("6 giorni fa",      6),
+    ("Meteo - Pioggia 2 giorni fa", 2),
+    ("Meteo - Pioggia 3 giorni fa", 3),
+    ("Meteo - Pioggia 4 giorni fa", 4),
+    ("Meteo - Pioggia 5 giorni fa", 5),
+    ("Meteo - Pioggia 6 giorni fa", 6),
+    ("Meteo - Pioggia ieri",        1),
+    ("Meteo - Pioggia oggi",        0),
 ]
 
 
@@ -60,19 +50,17 @@ async def async_setup_entry(
 
     entities: list[SensorEntity] = []
 
-    # Sensori dati grezzi Open-Meteo
+    # Dati grezzi Open-Meteo
     for label, offset in GIORNI_STORICI:
         entities.append(PioggiaStoricaSensor(coordinator, entry, label, offset))
 
     entities.append(PioggiaPrevistoSensor(coordinator, entry))
     entities.append(ProbabilitaPioggiaSensor(coordinator, entry))
-
-    # Sensori calcolati (dipendono da coordinator + entità number/switch)
     entities.append(PioggiaStoricaTotaleSensor(coordinator, entry))
+
+    # Sensori calcolati
     entities.append(FattoreRiduzioneSensor(coordinator, entry))
     entities.append(StatoSensor(coordinator, entry))
-
-    # Durate effettive per zona
     for zona in range(1, 5):
         entities.append(DurataEffettivaSensor(coordinator, entry, zona))
 
@@ -80,7 +68,7 @@ async def async_setup_entry(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Base class per sensori coordinator
+# Base
 # ─────────────────────────────────────────────────────────────────────────────
 
 class _CoordSensor(CoordinatorEntity[IrrigazioneCoordinator], SensorEntity):
@@ -117,7 +105,7 @@ class _CoordSensor(CoordinatorEntity[IrrigazioneCoordinator], SensorEntity):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Sensori dati meteo
+# Meteo — dati grezzi
 # ─────────────────────────────────────────────────────────────────────────────
 
 class PioggiaStoricaSensor(_CoordSensor):
@@ -138,7 +126,7 @@ class PioggiaStoricaSensor(_CoordSensor):
 
 
 class PioggiaPrevistoSensor(_CoordSensor):
-    _attr_name = "Pioggia prevista domani"
+    _attr_name = "Meteo - Pioggia prevista domani"
     _attr_native_unit_of_measurement = "mm"
     _attr_device_class = SensorDeviceClass.PRECIPITATION
     _attr_icon = "mdi:weather-partly-rainy"
@@ -153,7 +141,7 @@ class PioggiaPrevistoSensor(_CoordSensor):
 
 
 class ProbabilitaPioggiaSensor(_CoordSensor):
-    _attr_name = "Probabilità pioggia domani"
+    _attr_name = "Meteo - Probabilità pioggia domani"
     _attr_native_unit_of_measurement = "%"
     _attr_icon = "mdi:water-percent"
 
@@ -167,33 +155,26 @@ class ProbabilitaPioggiaSensor(_CoordSensor):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Sensori calcolati
+# Meteo — calcolati
 # ─────────────────────────────────────────────────────────────────────────────
 
 class _CalcolataSensor(_CoordSensor):
-    """Sensore che si aggiorna anche quando cambiano le entità dipendenti."""
-
-    _DIPENDENZE: list[str] = []  # chiavi entità da monitorare
+    """Sensore che aggiorna lo stato anche al cambio di entità dipendenti."""
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        # Aggiorna anche quando cambiano number/switch/text correlati
+
         @callback
         def _on_entity_change(event):
             self.async_write_ha_state()
 
-        # Ascolta cambiamenti di state su tutte le piattaforme dell'integrazione
-        # (modo semplice: track_state_change per il dominio intero)
         self.async_on_remove(
-            self.hass.bus.async_listen(
-                "state_changed",
-                _on_entity_change,
-            )
+            self.hass.bus.async_listen("state_changed", _on_entity_change)
         )
 
 
 class PioggiaStoricaTotaleSensor(_CalcolataSensor):
-    _attr_name = "Pioggia storica totale"
+    _attr_name = "Meteo - Pioggia storica totale"
     _attr_native_unit_of_measurement = "mm"
     _attr_device_class = SensorDeviceClass.PRECIPITATION
     _attr_icon = "mdi:weather-pouring"
@@ -209,7 +190,7 @@ class PioggiaStoricaTotaleSensor(_CalcolataSensor):
 
 
 class FattoreRiduzioneSensor(_CalcolataSensor):
-    _attr_name = "Fattore riduzione irrigazione"
+    _attr_name = "Meteo - Fattore riduzione"
     _attr_native_unit_of_measurement = "%"
     _attr_icon = "mdi:percent"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -224,12 +205,11 @@ class FattoreRiduzioneSensor(_CalcolataSensor):
 
 
 class StatoSensor(_CalcolataSensor):
-    _attr_name = "Stato irrigazione"
+    _attr_name = "Controllo - Stato"
     _attr_icon = "mdi:sprinkler-variant"
 
     def __init__(self, coordinator, entry) -> None:
         super().__init__(coordinator, entry)
-        self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_stato"
 
     @property
@@ -243,10 +223,9 @@ class StatoSensor(_CalcolataSensor):
         if fattore == 0:
             return "Sospesa (pioggia)"
 
-        # Controlla zone hardware
+        conf = {**self._entry.data, **self._entry.options}
         zone_keys = [CONF_ZONA_1, CONF_ZONA_2, CONF_ZONA_3, CONF_ZONA_4]
         nome_keys = [KEY_NOME_ZONA_1, KEY_NOME_ZONA_2, KEY_NOME_ZONA_3, KEY_NOME_ZONA_4]
-        conf = {**self._entry.data, **self._entry.options}
 
         for i, (ck, nk) in enumerate(zip(zone_keys, nome_keys), start=1):
             entity_id = conf.get(ck, "")
@@ -266,15 +245,13 @@ class DurataEffettivaSensor(_CalcolataSensor):
     _attr_icon = "mdi:timer"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    _DURATA_KEYS = [
-        KEY_ZONA_1_DURATA, KEY_ZONA_2_DURATA,
-        KEY_ZONA_3_DURATA, KEY_ZONA_4_DURATA,
-    ]
+    _DURATA_KEYS = [KEY_ZONA_1_DURATA, KEY_ZONA_2_DURATA, KEY_ZONA_3_DURATA, KEY_ZONA_4_DURATA]
 
     def __init__(self, coordinator, entry, zona: int) -> None:
         super().__init__(coordinator, entry)
         self._zona = zona
-        self._attr_name = f"Durata effettiva Zona {zona}"
+        # "Zona N - Durata effettiva" si ordina accanto a "Zona N - Durata base"
+        self._attr_name = f"Zona {zona} - Durata effettiva"
         self._attr_unique_id = f"{entry.entry_id}_durata_effettiva_zona_{zona}"
 
     @property
@@ -292,7 +269,7 @@ class DurataEffettivaSensor(_CalcolataSensor):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def calcola_fattore_riduzione(coordinator: IrrigazioneCoordinator, entity: _CoordSensor) -> int:
-    """Ritorna 0-100: percentuale di irrigazione da applicare."""
+    """Ritorna 0-100: percentuale di irrigazione da applicare in base al meteo."""
     giorni = int(entity._number_value(KEY_GIORNI, DEFAULT_GIORNI))
     soglia_prevista = entity._number_value(KEY_SOGLIA_PREVISTA, DEFAULT_SOGLIA_PREVISTA)
     soglia_storica = entity._number_value(KEY_SOGLIA_STORICA, DEFAULT_SOGLIA_STORICA)
@@ -300,15 +277,12 @@ def calcola_fattore_riduzione(coordinator: IrrigazioneCoordinator, entity: _Coor
     pioggia_storica = coordinator.get_historical_total(giorni)
     pioggia_domani = coordinator.get_precip(IDX_TOMORROW)
 
-    # Skip totale per pioggia prevista
     if entity._is_on(KEY_SKIP_PREVISTA) and pioggia_domani >= soglia_prevista:
         return 0
 
-    # Skip totale per pioggia storica
     if entity._is_on(KEY_SKIP_RECENTE) and pioggia_storica >= soglia_storica:
         return 0
 
-    # Riduzione proporzionale
     if entity._is_on(KEY_RIDUCI) and pioggia_storica > 0 and soglia_storica > 0:
         fattore = max(0.0, 1.0 - (pioggia_storica / soglia_storica))
         return int(fattore * 100)

@@ -4,13 +4,11 @@
       "user": {
         "title": "Configura il sistema irrigazione",
         "description": "Inserisci un nome per identificare questo sistema.",
-        "data": {
-          "title": "Nome del sistema"
-        }
+        "data": { "title": "Nome del sistema" }
       },
       "zone": {
-        "title": "Associa le 4 zone ai relè ESPHome",
-        "description": "Seleziona gli switch del Sonoff RM4 per ciascuna zona di irrigazione.",
+        "title": "Associa le 4 zone ai relè",
+        "description": "Seleziona gli switch che controllano i 4 relè del tuo dispositivo. Compatibile con qualsiasi modulo relè integrato in Home Assistant (ESPHome, Tasmota, Zigbee, Z-Wave, ecc.).",
         "data": {
           "zona_1_switch": "Switch Zona 1",
           "zona_2_switch": "Switch Zona 2",
@@ -20,17 +18,15 @@
       }
     },
     "error": {
-      "entity_not_found": "Entità non trovata. Verifica che il Sonoff RM4 sia online e integrato in HA."
+      "entity_not_found": "Entità non trovata. Verifica che il dispositivo sia online e visibile in Home Assistant."
     },
-    "abort": {
-      "already_configured": "Sistema irrigazione già configurato."
-    }
+    "abort": { "already_configured": "Sistema irrigazione già configurato." }
   },
   "options": {
     "step": {
       "init": {
         "title": "Modifica associazione zone",
-        "description": "Aggiorna gli switch ESPHome associati alle zone.",
+        "description": "Aggiorna gli switch associati alle zone di irrigazione.",
         "data": {
           "zona_1_switch": "Switch Zona 1",
           "zona_2_switch": "Switch Zona 2",
@@ -39,8 +35,6 @@
         }
       }
     },
-    "error": {
-      "entity_not_found": "Entità non trovata."
-    }
+    "error": { "entity_not_found": "Entità non trovata." }
   }
 }

@@ -15,13 +15,9 @@ from .const import (
     DOMAIN,
     ENTITIES,
     KEY_ABILITATA,
-    KEY_SLOT_1_ATTIVO,
-    KEY_SLOT_2_ATTIVO,
-    KEY_SLOT_3_ATTIVO,
+    KEY_SLOT_1_ATTIVO, KEY_SLOT_2_ATTIVO, KEY_SLOT_3_ATTIVO,
     KEY_LUN, KEY_MAR, KEY_MER, KEY_GIO, KEY_VEN, KEY_SAB, KEY_DOM,
-    KEY_SKIP_PREVISTA,
-    KEY_SKIP_RECENTE,
-    KEY_RIDUCI,
+    KEY_SKIP_PREVISTA, KEY_SKIP_RECENTE, KEY_RIDUCI,
 )
 
 
@@ -31,71 +27,66 @@ class IrrigazioneSwitchDescription(SwitchEntityDescription):
     default: bool = False
 
 
+# Prefissi logici → ordine alfabetico: Controllo, Fascia 1/2/3, Giorni, Meteo
 SWITCHES: tuple[IrrigazioneSwitchDescription, ...] = (
-    # Master
+    # ── Controllo ──────────────────────────────────────────
     IrrigazioneSwitchDescription(
         key=KEY_ABILITATA,
-        name="Sistema attivo",
+        name="Controllo - Sistema attivo",
         icon="mdi:sprinkler-variant",
         default=True,
     ),
-    # Slot orari
+    # ── Fasce orarie ───────────────────────────────────────
     IrrigazioneSwitchDescription(
         key=KEY_SLOT_1_ATTIVO,
-        name="Fascia 1 attiva",
+        name="Fascia 1 - Attiva",
         icon="mdi:clock-check-outline",
         default=True,
     ),
     IrrigazioneSwitchDescription(
         key=KEY_SLOT_2_ATTIVO,
-        name="Fascia 2 attiva",
+        name="Fascia 2 - Attiva",
         icon="mdi:clock-check-outline",
         default=False,
     ),
     IrrigazioneSwitchDescription(
         key=KEY_SLOT_3_ATTIVO,
-        name="Fascia 3 attiva",
+        name="Fascia 3 - Attiva",
         icon="mdi:clock-check-outline",
         default=False,
     ),
-    # Giorni settimana
-    IrrigazioneSwitchDescription(key=KEY_LUN, name="Lunedì",    icon="mdi:calendar-today", default=True),
-    IrrigazioneSwitchDescription(key=KEY_MAR, name="Martedì",   icon="mdi:calendar-today", default=True),
-    IrrigazioneSwitchDescription(key=KEY_MER, name="Mercoledì", icon="mdi:calendar-today", default=True),
-    IrrigazioneSwitchDescription(key=KEY_GIO, name="Giovedì",   icon="mdi:calendar-today", default=True),
-    IrrigazioneSwitchDescription(key=KEY_VEN, name="Venerdì",   icon="mdi:calendar-today", default=True),
-    IrrigazioneSwitchDescription(key=KEY_SAB, name="Sabato",    icon="mdi:calendar-today", default=False),
-    IrrigazioneSwitchDescription(key=KEY_DOM, name="Domenica",  icon="mdi:calendar-today", default=False),
-    # Meteo
+    # ── Giorni ─────────────────────────────────────────────
+    IrrigazioneSwitchDescription(key=KEY_LUN, name="Giorni - Lunedì",    icon="mdi:calendar-today", default=True),
+    IrrigazioneSwitchDescription(key=KEY_MAR, name="Giorni - Martedì",   icon="mdi:calendar-today", default=True),
+    IrrigazioneSwitchDescription(key=KEY_MER, name="Giorni - Mercoledì", icon="mdi:calendar-today", default=True),
+    IrrigazioneSwitchDescription(key=KEY_GIO, name="Giorni - Giovedì",   icon="mdi:calendar-today", default=True),
+    IrrigazioneSwitchDescription(key=KEY_VEN, name="Giorni - Venerdì",   icon="mdi:calendar-today", default=True),
+    IrrigazioneSwitchDescription(key=KEY_SAB, name="Giorni - Sabato",    icon="mdi:calendar-today", default=False),
+    IrrigazioneSwitchDescription(key=KEY_DOM, name="Giorni - Domenica",  icon="mdi:calendar-today", default=False),
+    # ── Meteo ──────────────────────────────────────────────
     IrrigazioneSwitchDescription(
         key=KEY_SKIP_PREVISTA,
-        name="Salta se prevista pioggia",
+        name="Meteo - Salta se pioggia prevista",
         icon="mdi:weather-rainy",
         default=True,
     ),
     IrrigazioneSwitchDescription(
         key=KEY_SKIP_RECENTE,
-        name="Salta se ha piovuto di recente",
+        name="Meteo - Salta se pioggia recente",
         icon="mdi:weather-pouring",
         default=True,
     ),
     IrrigazioneSwitchDescription(
         key=KEY_RIDUCI,
-        name="Riduci durata se ha piovuto",
+        name="Meteo - Riduci se ha piovuto",
         icon="mdi:water-minus",
         default=True,
     ),
 )
 
-# Mappa giorno della settimana (weekday()) → chiave entità
 WEEKDAY_KEY_MAP = {
-    0: KEY_LUN,
-    1: KEY_MAR,
-    2: KEY_MER,
-    3: KEY_GIO,
-    4: KEY_VEN,
-    5: KEY_SAB,
-    6: KEY_DOM,
+    0: KEY_LUN, 1: KEY_MAR, 2: KEY_MER, 3: KEY_GIO,
+    4: KEY_VEN, 5: KEY_SAB, 6: KEY_DOM,
 }
 
 
@@ -106,15 +97,12 @@ async def async_setup_entry(
 ) -> None:
     entities = [IrrigazioneSwitch(entry.entry_id, desc) for desc in SWITCHES]
     async_add_entities(entities)
-
     store = hass.data[DOMAIN][entry.entry_id].setdefault(ENTITIES, {})
     for entity in entities:
         store[entity.key] = entity
 
 
 class IrrigazioneSwitch(RestoreEntity, SwitchEntity):
-    """Switch virtuale con persistenza stato."""
-
     _attr_has_entity_name = True
     _attr_should_poll = False
 
