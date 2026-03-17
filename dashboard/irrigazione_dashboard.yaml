@@ -1,158 +1,475 @@
 # =============================================================
-# IRRIGAZIONE — Dashboard Lovelace
+# 💧 IRRIGAZIONE — Dashboard Lovelace Moderna
 # =============================================================
-# Come importare:
-#   1. Copia il contenuto di questo file
-#   2. HA → Impostazioni → Dashboard → + → "Vuota"
-#   3. Apri la dashboard → matita → Editor RAW → incolla
+# DIPENDENZE (installa da HACS → Frontend):
+#   1. Mushroom Cards  →  cerca "Mushroom"
+#   2. Card Mod        →  cerca "card-mod"  (per CSS custom)
 #
-# I nomi entità seguono il prefisso del tuo sistema.
-# Se hai chiamato il sistema "Irrigazione Giardino" i prefissi
-# potrebbero essere diversi. Controlla in:
-# Impostazioni → Dispositivi → Sistema Irrigazione → copia entity_id
+# PREFISSO ENTITÀ:
+#   Tutte le entità usano il prefisso del nome che hai scelto
+#   durante il setup. Esempio: se hai chiamato il sistema
+#   "Sistema Irrigazione" il prefisso è "sistema_irrigazione_".
+#
+#   Se hai usato un nome diverso, fai Trova&Sostituisci:
+#   "sistema_irrigazione_" → "tuonome_"
+#
+# COME IMPORTARE:
+#   HA → Impostazioni → Dashboard → + → "Vuota"
+#   Apri → matita → Editor RAW → incolla questo file
 # =============================================================
 
-title: Irrigazione
+title: 💧 Irrigazione
 views:
 
   # ════════════════════════════════════════════════════════
-  # VISTA 1 — CONTROLLO
+  # VISTA 1 — PANORAMICA
   # ════════════════════════════════════════════════════════
-  - title: Controllo
+  - title: Panoramica
     path: irrigazione
     icon: mdi:sprinkler-variant
     cards:
 
-      # ── Stato e master switch ────────────────────────────
-      - type: entities
-        title: "Sistema"
-        show_header_toggle: false
-        entities:
-          - entity: switch.controllo_sistema_attivo
-            name: "Sistema attivo"
-          - entity: sensor.controllo_stato
-            name: "Stato attuale"
-          - entity: sensor.meteo_fattore_riduzione
-            name: "Irrigazione attiva (%)"
+      # ── Titolo con stato dinamico ────────────────────────
+      - type: custom:mushroom-title-card
+        title: 💧 Sistema Irrigazione
+        subtitle: "{{ states('sensor.sistema_irrigazione_controllo_stato') }}"
+        card_mod:
+          style: |
+            ha-card {
+              background: linear-gradient(135deg,
+                rgba(13,71,161,0.85) 0%,
+                rgba(21,101,192,0.7) 100%);
+              border-radius: 20px;
+              padding: 8px 4px 0;
+            }
 
-      # ── Pulsanti avvio / stop ───────────────────────────
+      # ── Chips: stato rapido ──────────────────────────────
+      - type: custom:mushroom-chips-card
+        chips:
+          - type: template
+            icon: mdi:sprinkler-variant
+            icon_color: >
+              {{ 'green' if is_state('switch.sistema_irrigazione_controllo_sistema_attivo','on') else 'grey' }}
+            content: >
+              {{ 'Attivo' if is_state('switch.sistema_irrigazione_controllo_sistema_attivo','on') else 'Spento' }}
+            tap_action:
+              action: toggle
+              entity: switch.sistema_irrigazione_controllo_sistema_attivo
+
+          - type: template
+            icon: mdi:percent
+            icon_color: >
+              {% set v = states('sensor.sistema_irrigazione_meteo_fattore_riduzione') | int(100) %}
+              {% if v >= 70 %}green{% elif v >= 30 %}orange{% else %}red{% endif %}
+            content: >
+              {{ states('sensor.sistema_irrigazione_meteo_fattore_riduzione') }}%
+
+          - type: template
+            icon: mdi:weather-rainy
+            icon_color: blue
+            content: >
+              {{ states('sensor.sistema_irrigazione_meteo_pioggia_oggi') }} mm oggi
+
+          - type: template
+            icon: mdi:weather-partly-rainy
+            icon_color: >
+              {% set mm = states('sensor.sistema_irrigazione_meteo_pioggia_prevista_domani') | float(0) %}
+              {% set soglia = states('number.sistema_irrigazione_meteo_soglia_pioggia_prevista') | float(3) %}
+              {{ 'red' if mm >= soglia else 'blue' }}
+            content: >
+              {{ states('sensor.sistema_irrigazione_meteo_pioggia_prevista_domani') }} mm domani
+
+      # ── Pulsanti Avvia / Ferma ───────────────────────────
       - type: horizontal-stack
         cards:
-          - type: button
-            name: "Avvia ora"
-            icon: mdi:play-circle-outline
-            icon_height: 52px
+          - type: custom:mushroom-template-card
+            primary: Avvia ora
+            secondary: Tutte le zone
+            icon: mdi:play-circle
+            icon_color: green
             tap_action:
               action: call-service
               service: irrigazione.avvia_sequenza
-          - type: button
-            name: "Ferma tutto"
-            icon: mdi:stop-circle-outline
-            icon_height: 52px
+            card_mod:
+              style: |
+                ha-card {
+                  background: linear-gradient(135deg,
+                    rgba(27,94,32,0.85) 0%,
+                    rgba(46,125,50,0.7) 100%);
+                  border-radius: 18px;
+                }
+
+          - type: custom:mushroom-template-card
+            primary: Ferma tutto
+            secondary: Stop immediato
+            icon: mdi:stop-circle
             icon_color: red
             tap_action:
               action: call-service
               service: irrigazione.ferma_tutto
+            card_mod:
+              style: |
+                ha-card {
+                  background: linear-gradient(135deg,
+                    rgba(183,28,28,0.85) 0%,
+                    rgba(211,47,47,0.7) 100%);
+                  border-radius: 18px;
+                }
 
-      # ── Zone ────────────────────────────────────────────
-      - type: entities
-        title: "Zone"
-        show_header_toggle: false
-        entities:
-          - type: section
-            label: "Zona 1"
-          - entity: text.zona_1_nome
-            name: "Nome"
-          - entity: number.zona_1_durata_base
-            name: "Durata base"
-          - entity: sensor.zona_1_durata_effettiva
-            name: "Durata effettiva"
+      # ── Zone: 2x2 grid ──────────────────────────────────
+      - type: horizontal-stack
+        cards:
+          # ZONA 1
+          - type: custom:mushroom-template-card
+            primary: "{{ states('text.sistema_irrigazione_zona_1_nome') }}"
+            secondary: >
+              {% set eff = states('sensor.sistema_irrigazione_zona_1_durata_effettiva') | int(0) %}
+              {% set base = states('number.sistema_irrigazione_zona_1_durata_base') | int(10) %}
+              {% set stato = states('sensor.sistema_irrigazione_controllo_stato') %}
+              {% set nome = states('text.sistema_irrigazione_zona_1_nome') %}
+              {% if nome ~ ' in corso' == stato %}
+                💧 In irrigazione
+              {% elif eff == 0 %}
+                ⏸️ Sospesa
+              {% elif eff < base %}
+                ⚡ {{ eff }} min (ridotta)
+              {% else %}
+                ⏱️ {{ eff }} min
+              {% endif %}
+            icon: mdi:sprinkler
+            icon_color: >
+              {% set stato = states('sensor.sistema_irrigazione_controllo_stato') %}
+              {% set nome = states('text.sistema_irrigazione_zona_1_nome') %}
+              {% if nome ~ ' in corso' == stato %}blue
+              {% elif states('sensor.sistema_irrigazione_meteo_fattore_riduzione') | int(100) == 0 %}red
+              {% else %}green{% endif %}
+            badge_icon: >
+              {% if states('text.sistema_irrigazione_zona_1_nome') ~ ' in corso'
+                 == states('sensor.sistema_irrigazione_controllo_stato') %}
+                mdi:water
+              {% endif %}
+            badge_color: blue
+            tap_action:
+              action: call-service
+              service: irrigazione.avvia_zona
+              service_data:
+                zona: 1
+                durata: "{{ states('sensor.sistema_irrigazione_zona_1_durata_effettiva') | int(5) }}"
+            hold_action:
+              action: more-info
+              entity: number.sistema_irrigazione_zona_1_durata_base
+            card_mod:
+              style: |
+                ha-card {
+                  background: linear-gradient(160deg,
+                    rgba(13,71,161,0.7) 0%,
+                    rgba(25,118,210,0.4) 100%);
+                  border-radius: 18px;
+                }
 
-          - type: section
-            label: "Zona 2"
-          - entity: text.zona_2_nome
-            name: "Nome"
-          - entity: number.zona_2_durata_base
-            name: "Durata base"
-          - entity: sensor.zona_2_durata_effettiva
-            name: "Durata effettiva"
+          # ZONA 2
+          - type: custom:mushroom-template-card
+            primary: "{{ states('text.sistema_irrigazione_zona_2_nome') }}"
+            secondary: >
+              {% set eff = states('sensor.sistema_irrigazione_zona_2_durata_effettiva') | int(0) %}
+              {% set base = states('number.sistema_irrigazione_zona_2_durata_base') | int(10) %}
+              {% set stato = states('sensor.sistema_irrigazione_controllo_stato') %}
+              {% set nome = states('text.sistema_irrigazione_zona_2_nome') %}
+              {% if nome ~ ' in corso' == stato %}💧 In irrigazione
+              {% elif eff == 0 %}⏸️ Sospesa
+              {% elif eff < base %}⚡ {{ eff }} min (ridotta)
+              {% else %}⏱️ {{ eff }} min{% endif %}
+            icon: mdi:sprinkler
+            icon_color: >
+              {% set stato = states('sensor.sistema_irrigazione_controllo_stato') %}
+              {% set nome = states('text.sistema_irrigazione_zona_2_nome') %}
+              {% if nome ~ ' in corso' == stato %}blue
+              {% elif states('sensor.sistema_irrigazione_meteo_fattore_riduzione') | int(100) == 0 %}red
+              {% else %}green{% endif %}
+            badge_icon: >
+              {% if states('text.sistema_irrigazione_zona_2_nome') ~ ' in corso'
+                 == states('sensor.sistema_irrigazione_controllo_stato') %}mdi:water{% endif %}
+            badge_color: blue
+            tap_action:
+              action: call-service
+              service: irrigazione.avvia_zona
+              service_data:
+                zona: 2
+                durata: "{{ states('sensor.sistema_irrigazione_zona_2_durata_effettiva') | int(5) }}"
+            card_mod:
+              style: |
+                ha-card {
+                  background: linear-gradient(160deg,
+                    rgba(13,71,161,0.7) 0%,
+                    rgba(25,118,210,0.4) 100%);
+                  border-radius: 18px;
+                }
 
-          - type: section
-            label: "Zona 3"
-          - entity: text.zona_3_nome
-            name: "Nome"
-          - entity: number.zona_3_durata_base
-            name: "Durata base"
-          - entity: sensor.zona_3_durata_effettiva
-            name: "Durata effettiva"
+      - type: horizontal-stack
+        cards:
+          # ZONA 3
+          - type: custom:mushroom-template-card
+            primary: "{{ states('text.sistema_irrigazione_zona_3_nome') }}"
+            secondary: >
+              {% set eff = states('sensor.sistema_irrigazione_zona_3_durata_effettiva') | int(0) %}
+              {% set base = states('number.sistema_irrigazione_zona_3_durata_base') | int(10) %}
+              {% set stato = states('sensor.sistema_irrigazione_controllo_stato') %}
+              {% set nome = states('text.sistema_irrigazione_zona_3_nome') %}
+              {% if nome ~ ' in corso' == stato %}💧 In irrigazione
+              {% elif eff == 0 %}⏸️ Sospesa
+              {% elif eff < base %}⚡ {{ eff }} min (ridotta)
+              {% else %}⏱️ {{ eff }} min{% endif %}
+            icon: mdi:sprinkler
+            icon_color: >
+              {% set stato = states('sensor.sistema_irrigazione_controllo_stato') %}
+              {% set nome = states('text.sistema_irrigazione_zona_3_nome') %}
+              {% if nome ~ ' in corso' == stato %}blue
+              {% elif states('sensor.sistema_irrigazione_meteo_fattore_riduzione') | int(100) == 0 %}red
+              {% else %}green{% endif %}
+            badge_icon: >
+              {% if states('text.sistema_irrigazione_zona_3_nome') ~ ' in corso'
+                 == states('sensor.sistema_irrigazione_controllo_stato') %}mdi:water{% endif %}
+            badge_color: blue
+            tap_action:
+              action: call-service
+              service: irrigazione.avvia_zona
+              service_data:
+                zona: 3
+                durata: "{{ states('sensor.sistema_irrigazione_zona_3_durata_effettiva') | int(5) }}"
+            card_mod:
+              style: |
+                ha-card {
+                  background: linear-gradient(160deg,
+                    rgba(13,71,161,0.7) 0%,
+                    rgba(25,118,210,0.4) 100%);
+                  border-radius: 18px;
+                }
 
-          - type: section
-            label: "Zona 4"
-          - entity: text.zona_4_nome
-            name: "Nome"
-          - entity: number.zona_4_durata_base
-            name: "Durata base"
-          - entity: sensor.zona_4_durata_effettiva
-            name: "Durata effettiva"
+          # ZONA 4
+          - type: custom:mushroom-template-card
+            primary: "{{ states('text.sistema_irrigazione_zona_4_nome') }}"
+            secondary: >
+              {% set eff = states('sensor.sistema_irrigazione_zona_4_durata_effettiva') | int(0) %}
+              {% set base = states('number.sistema_irrigazione_zona_4_durata_base') | int(10) %}
+              {% set stato = states('sensor.sistema_irrigazione_controllo_stato') %}
+              {% set nome = states('text.sistema_irrigazione_zona_4_nome') %}
+              {% if nome ~ ' in corso' == stato %}💧 In irrigazione
+              {% elif eff == 0 %}⏸️ Sospesa
+              {% elif eff < base %}⚡ {{ eff }} min (ridotta)
+              {% else %}⏱️ {{ eff }} min{% endif %}
+            icon: mdi:sprinkler
+            icon_color: >
+              {% set stato = states('sensor.sistema_irrigazione_controllo_stato') %}
+              {% set nome = states('text.sistema_irrigazione_zona_4_nome') %}
+              {% if nome ~ ' in corso' == stato %}blue
+              {% elif states('sensor.sistema_irrigazione_meteo_fattore_riduzione') | int(100) == 0 %}red
+              {% else %}green{% endif %}
+            badge_icon: >
+              {% if states('text.sistema_irrigazione_zona_4_nome') ~ ' in corso'
+                 == states('sensor.sistema_irrigazione_controllo_stato') %}mdi:water{% endif %}
+            badge_color: blue
+            tap_action:
+              action: call-service
+              service: irrigazione.avvia_zona
+              service_data:
+                zona: 4
+                durata: "{{ states('sensor.sistema_irrigazione_zona_4_durata_effettiva') | int(5) }}"
+            card_mod:
+              style: |
+                ha-card {
+                  background: linear-gradient(160deg,
+                    rgba(13,71,161,0.7) 0%,
+                    rgba(25,118,210,0.4) 100%);
+                  border-radius: 18px;
+                }
 
-          - type: section
-            label: "Generale"
-          - entity: number.zone_attesa_tra_zone
-            name: "Attesa tra zone"
+      # ── Attesa tra zone ──────────────────────────────────
+      - type: custom:mushroom-number-card
+        entity: number.sistema_irrigazione_zone_attesa_tra_zone
+        name: "Attesa tra zone"
+        icon: mdi:timer-pause-outline
+        icon_color: grey
+        display_mode: slider
+        card_mod:
+          style: |
+            ha-card { border-radius: 18px; }
 
   # ════════════════════════════════════════════════════════
-  # VISTA 2 — PROGRAMMAZIONE
+  # VISTA 2 — PROGRAMMA
   # ════════════════════════════════════════════════════════
   - title: Programma
     path: irrigazione-programma
     icon: mdi:calendar-clock
     cards:
 
+      - type: custom:mushroom-title-card
+        title: 📅 Programmazione
+        subtitle: Giorni e orari di irrigazione
+
       # ── Giorni attivi ────────────────────────────────────
-      - type: entities
-        title: "Giorni attivi"
-        show_header_toggle: false
-        entities:
-          - entity: switch.giorni_lunedi
-            name: "Lunedì"
-          - entity: switch.giorni_martedi
-            name: "Martedì"
-          - entity: switch.giorni_mercoledi
-            name: "Mercoledì"
-          - entity: switch.giorni_giovedi
-            name: "Giovedì"
-          - entity: switch.giorni_venerdi
-            name: "Venerdì"
-          - entity: switch.giorni_sabato
-            name: "Sabato"
-          - entity: switch.giorni_domenica
-            name: "Domenica"
+      - type: custom:mushroom-title-card
+        title: Giorni attivi
+        card_mod:
+          style: |
+            ha-card { padding-bottom: 0; }
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-entity-card
+            entity: switch.sistema_irrigazione_giorni_lunedi
+            name: Lun
+            icon: mdi:alpha-l-circle
+            icon_color: >
+              {{ 'blue' if is_state('switch.sistema_irrigazione_giorni_lunedi','on') else 'grey' }}
+            tap_action: { action: toggle }
+            card_mod:
+              style: |
+                ha-card { border-radius: 16px; }
+          - type: custom:mushroom-entity-card
+            entity: switch.sistema_irrigazione_giorni_martedi
+            name: Mar
+            icon: mdi:alpha-m-circle
+            icon_color: >
+              {{ 'blue' if is_state('switch.sistema_irrigazione_giorni_martedi','on') else 'grey' }}
+            tap_action: { action: toggle }
+            card_mod:
+              style: |
+                ha-card { border-radius: 16px; }
+          - type: custom:mushroom-entity-card
+            entity: switch.sistema_irrigazione_giorni_mercoledi
+            name: Mer
+            icon: mdi:alpha-m-circle-outline
+            icon_color: >
+              {{ 'blue' if is_state('switch.sistema_irrigazione_giorni_mercoledi','on') else 'grey' }}
+            tap_action: { action: toggle }
+            card_mod:
+              style: |
+                ha-card { border-radius: 16px; }
+          - type: custom:mushroom-entity-card
+            entity: switch.sistema_irrigazione_giorni_giovedi
+            name: Gio
+            icon: mdi:alpha-g-circle
+            icon_color: >
+              {{ 'blue' if is_state('switch.sistema_irrigazione_giorni_giovedi','on') else 'grey' }}
+            tap_action: { action: toggle }
+            card_mod:
+              style: |
+                ha-card { border-radius: 16px; }
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-entity-card
+            entity: switch.sistema_irrigazione_giorni_venerdi
+            name: Ven
+            icon: mdi:alpha-v-circle
+            icon_color: >
+              {{ 'blue' if is_state('switch.sistema_irrigazione_giorni_venerdi','on') else 'grey' }}
+            tap_action: { action: toggle }
+            card_mod:
+              style: |
+                ha-card { border-radius: 16px; }
+          - type: custom:mushroom-entity-card
+            entity: switch.sistema_irrigazione_giorni_sabato
+            name: Sab
+            icon: mdi:alpha-s-circle
+            icon_color: >
+              {{ 'orange' if is_state('switch.sistema_irrigazione_giorni_sabato','on') else 'grey' }}
+            tap_action: { action: toggle }
+            card_mod:
+              style: |
+                ha-card { border-radius: 16px; }
+          - type: custom:mushroom-entity-card
+            entity: switch.sistema_irrigazione_giorni_domenica
+            name: Dom
+            icon: mdi:alpha-d-circle
+            icon_color: >
+              {{ 'orange' if is_state('switch.sistema_irrigazione_giorni_domenica','on') else 'grey' }}
+            tap_action: { action: toggle }
+            card_mod:
+              style: |
+                ha-card { border-radius: 16px; }
+          # spacer
+          - type: custom:mushroom-template-card
+            primary: ""
+            icon: ""
+            card_mod:
+              style: |
+                ha-card { background: transparent; box-shadow: none; }
 
       # ── Fasce orarie ─────────────────────────────────────
-      - type: entities
-        title: "Fasce orarie (fino a 3 al giorno)"
-        show_header_toggle: false
-        entities:
-          - type: section
-            label: "Fascia 1"
-          - entity: switch.fascia_1_attiva
-            name: "Abilitata"
-          - entity: time.fascia_1_orario
-            name: "Orario"
+      - type: custom:mushroom-title-card
+        title: Fasce orarie
+        card_mod:
+          style: |
+            ha-card { padding-bottom: 0; }
 
-          - type: section
-            label: "Fascia 2"
-          - entity: switch.fascia_2_attiva
-            name: "Abilitata"
-          - entity: time.fascia_2_orario
-            name: "Orario"
+      - type: vertical-stack
+        cards:
+          # Fascia 1
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-entity-card
+                entity: switch.sistema_irrigazione_fascia_1_attiva
+                name: Fascia 1
+                icon: mdi:clock-time-seven-outline
+                icon_color: >
+                  {{ 'green' if is_state('switch.sistema_irrigazione_fascia_1_attiva','on') else 'grey' }}
+                tap_action: { action: toggle }
+                card_mod:
+                  style: |
+                    ha-card { border-radius: 16px; }
+              - type: custom:mushroom-entity-card
+                entity: time.sistema_irrigazione_fascia_1_orario
+                name: Orario
+                icon: mdi:clock-outline
+                icon_color: blue
+                card_mod:
+                  style: |
+                    ha-card { border-radius: 16px; }
 
-          - type: section
-            label: "Fascia 3"
-          - entity: switch.fascia_3_attiva
-            name: "Abilitata"
-          - entity: time.fascia_3_orario
-            name: "Orario"
+          # Fascia 2
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-entity-card
+                entity: switch.sistema_irrigazione_fascia_2_attiva
+                name: Fascia 2
+                icon: mdi:clock-time-three-outline
+                icon_color: >
+                  {{ 'green' if is_state('switch.sistema_irrigazione_fascia_2_attiva','on') else 'grey' }}
+                tap_action: { action: toggle }
+                card_mod:
+                  style: |
+                    ha-card { border-radius: 16px; }
+              - type: custom:mushroom-entity-card
+                entity: time.sistema_irrigazione_fascia_2_orario
+                name: Orario
+                icon: mdi:clock-outline
+                icon_color: blue
+                card_mod:
+                  style: |
+                    ha-card { border-radius: 16px; }
+
+          # Fascia 3
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-entity-card
+                entity: switch.sistema_irrigazione_fascia_3_attiva
+                name: Fascia 3
+                icon: mdi:clock-time-twelve-outline
+                icon_color: >
+                  {{ 'green' if is_state('switch.sistema_irrigazione_fascia_3_attiva','on') else 'grey' }}
+                tap_action: { action: toggle }
+                card_mod:
+                  style: |
+                    ha-card { border-radius: 16px; }
+              - type: custom:mushroom-entity-card
+                entity: time.sistema_irrigazione_fascia_3_orario
+                name: Orario
+                icon: mdi:clock-outline
+                icon_color: blue
+                card_mod:
+                  style: |
+                    ha-card { border-radius: 16px; }
 
   # ════════════════════════════════════════════════════════
   # VISTA 3 — METEO
@@ -162,9 +479,17 @@ views:
     icon: mdi:weather-partly-rainy
     cards:
 
+      - type: custom:mushroom-title-card
+        title: 🌧️ Adattamento Meteo
+        subtitle: >
+          {% set f = states('sensor.sistema_irrigazione_meteo_fattore_riduzione') | int(100) %}
+          {% if f == 100 %}Irrigazione normale (100%)
+          {% elif f == 0 %}Irrigazione sospesa per pioggia
+          {% else %}Irrigazione ridotta al {{ f }}%{% endif %}
+
       # ── Gauge fattore riduzione ──────────────────────────
       - type: gauge
-        entity: sensor.meteo_fattore_riduzione
+        entity: sensor.sistema_irrigazione_meteo_fattore_riduzione
         name: "Irrigazione attiva"
         min: 0
         max: 100
@@ -173,54 +498,126 @@ views:
           green: 70
           yellow: 30
           red: 0
+        card_mod:
+          style: |
+            ha-card {
+              background: linear-gradient(135deg,
+                rgba(13,71,161,0.6) 0%,
+                rgba(21,101,192,0.4) 100%);
+              border-radius: 20px;
+            }
 
-      # ── Piogge recenti ───────────────────────────────────
-      - type: entities
-        title: "Piogge recenti (Open-Meteo)"
-        show_header_toggle: false
+      # ── Stats pioggia recente ────────────────────────────
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: "{{ states('sensor.sistema_irrigazione_meteo_pioggia_oggi') }} mm"
+            secondary: Oggi
+            icon: mdi:weather-rainy
+            icon_color: blue
+            card_mod:
+              style: |
+                ha-card {
+                  background: linear-gradient(135deg,
+                    rgba(13,71,161,0.6) 0%,
+                    rgba(25,118,210,0.4) 100%);
+                  border-radius: 18px;
+                }
+          - type: custom:mushroom-template-card
+            primary: "{{ states('sensor.sistema_irrigazione_meteo_pioggia_ieri') }} mm"
+            secondary: Ieri
+            icon: mdi:weather-rainy
+            icon_color: indigo
+            card_mod:
+              style: |
+                ha-card {
+                  background: linear-gradient(135deg,
+                    rgba(26,35,126,0.6) 0%,
+                    rgba(40,53,147,0.4) 100%);
+                  border-radius: 18px;
+                }
+          - type: custom:mushroom-template-card
+            primary: "{{ states('sensor.sistema_irrigazione_meteo_pioggia_storica_totale') }} mm"
+            secondary: >
+              Ultimi {{ states('number.sistema_irrigazione_meteo_giorni_da_analizzare') | int }} gg
+            icon: mdi:weather-pouring
+            icon_color: >
+              {% set tot = states('sensor.sistema_irrigazione_meteo_pioggia_storica_totale') | float(0) %}
+              {% set soglia = states('number.sistema_irrigazione_meteo_soglia_pioggia_storica') | float(15) %}
+              {% if tot >= soglia %}red{% elif tot >= soglia * 0.5 %}orange{% else %}green{% endif %}
+            card_mod:
+              style: |
+                ha-card {
+                  background: linear-gradient(135deg,
+                    rgba(74,20,140,0.6) 0%,
+                    rgba(106,27,154,0.4) 100%);
+                  border-radius: 18px;
+                }
+
+      # ── Previsione domani ────────────────────────────────
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: "{{ states('sensor.sistema_irrigazione_meteo_pioggia_prevista_domani') }} mm"
+            secondary: Prevista domani
+            icon: mdi:weather-partly-rainy
+            icon_color: >
+              {% set mm = states('sensor.sistema_irrigazione_meteo_pioggia_prevista_domani') | float(0) %}
+              {% set soglia = states('number.sistema_irrigazione_meteo_soglia_pioggia_prevista') | float(3) %}
+              {{ 'red' if mm >= soglia else 'blue' }}
+            card_mod:
+              style: |
+                ha-card { border-radius: 18px; }
+
+          - type: custom:mushroom-template-card
+            primary: "{{ states('sensor.sistema_irrigazione_meteo_probabilita_pioggia_domani') }}%"
+            secondary: Probabilità pioggia
+            icon: mdi:water-percent
+            icon_color: >
+              {% set p = states('sensor.sistema_irrigazione_meteo_probabilita_pioggia_domani') | int(0) %}
+              {% if p >= 70 %}red{% elif p >= 40 %}orange{% else %}blue{% endif %}
+            card_mod:
+              style: |
+                ha-card { border-radius: 18px; }
+
+      # ── Grafico storico piogge ───────────────────────────
+      - type: history-graph
+        title: "Piogge ultimi 7 giorni"
+        hours_to_show: 168
         entities:
-          - entity: sensor.meteo_pioggia_oggi
-            name: "Oggi"
-          - entity: sensor.meteo_pioggia_ieri
-            name: "Ieri"
-          - entity: sensor.meteo_pioggia_2_giorni_fa
-            name: "2 giorni fa"
-          - entity: sensor.meteo_pioggia_3_giorni_fa
-            name: "3 giorni fa"
-          - entity: sensor.meteo_pioggia_4_giorni_fa
-            name: "4 giorni fa"
-          - entity: sensor.meteo_pioggia_5_giorni_fa
-            name: "5 giorni fa"
-          - entity: sensor.meteo_pioggia_6_giorni_fa
-            name: "6 giorni fa"
-          - type: section
-            label: "Totale e previsioni"
-          - entity: sensor.meteo_pioggia_storica_totale
-            name: "Totale periodo analizzato"
-          - entity: sensor.meteo_pioggia_prevista_domani
-            name: "Prevista domani"
-          - entity: sensor.meteo_probabilita_pioggia_domani
-            name: "Probabilità pioggia domani"
+          - entity: sensor.sistema_irrigazione_meteo_pioggia_storica_totale
+            name: Pioggia cumulata
+        card_mod:
+          style: |
+            ha-card {
+              background: linear-gradient(135deg,
+                rgba(13,71,161,0.4) 0%,
+                rgba(21,101,192,0.2) 100%);
+              border-radius: 20px;
+            }
 
-      # ── Soglie e regole meteo ────────────────────────────
+      # ── Impostazioni soglie ──────────────────────────────
+      - type: custom:mushroom-title-card
+        title: ⚙️ Impostazioni meteo
+        card_mod:
+          style: |
+            ha-card { padding-bottom: 0; }
+
       - type: entities
-        title: "Regole adattamento meteo"
-        show_header_toggle: false
         entities:
-          - type: section
-            label: "Analisi pioggia passata"
-          - entity: number.meteo_giorni_da_analizzare
-            name: "Giorni da analizzare"
-          - entity: number.meteo_soglia_pioggia_storica
-            name: "Soglia skip/riduzione (mm)"
-          - entity: switch.meteo_salta_se_pioggia_recente
-            name: "Salta se supera soglia"
-          - entity: switch.meteo_riduci_se_ha_piovuto
-            name: "Riduci proporzionalmente"
-
-          - type: section
-            label: "Previsione pioggia domani"
-          - entity: number.meteo_soglia_pioggia_prevista
-            name: "Soglia skip previsione (mm)"
-          - entity: switch.meteo_salta_se_pioggia_prevista
-            name: "Salta se supera soglia"
+          - entity: number.sistema_irrigazione_meteo_giorni_da_analizzare
+            name: Giorni da analizzare
+          - entity: number.sistema_irrigazione_meteo_soglia_pioggia_storica
+            name: Soglia pioggia storica (skip)
+          - entity: switch.sistema_irrigazione_meteo_salta_se_pioggia_recente
+            name: Salta se supera soglia storica
+          - entity: switch.sistema_irrigazione_meteo_riduci_se_ha_piovuto
+            name: Riduci proporzionalmente
+          - type: divider
+          - entity: number.sistema_irrigazione_meteo_soglia_pioggia_prevista
+            name: Soglia pioggia prevista (skip)
+          - entity: switch.sistema_irrigazione_meteo_salta_se_pioggia_prevista
+            name: Salta se supera soglia previsione
+        card_mod:
+          style: |
+            ha-card { border-radius: 20px; }
