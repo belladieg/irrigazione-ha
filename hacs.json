@@ -2,5 +2,6 @@
   "name": "Sistema Irrigazione",
   "content_in_root": false,
   "render_readme": true,
-  "homeassistant": "2023.1.0"
+  "homeassistant": "2023.1.0",
+  "description": "Gestione irrigazione a 4 zone con adattamento meteo automatico per Home Assistant"
 }

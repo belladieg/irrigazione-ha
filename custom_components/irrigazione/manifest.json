@@ -4,7 +4,7 @@
   "codeowners": [],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "",
+  "documentation": "https://github.com/belladieg/irrigazione-ha",
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "requirements": [],
